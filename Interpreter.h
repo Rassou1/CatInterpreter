@@ -18,44 +18,44 @@ public:
 	std::vector<std::string> statements;
 
 	std::map<std::string, int> symbolTable;
+
+	std::ostream& outstream;
 	
 	int position = 0;
 	
 	const std::string ETX = "\u0003";
 	
-	std::string peek();
+	std::string Peek();
 
-	std::string peekP();
+	std::string PeekP();
 
-	std::string peekP(int steps);
+	std::string PeekP(int steps);
 	
-	std::string peek(int steps);
+	std::string Peek(int steps);
 
 	bool ReadFile(const std::string& fileName);
 
-	void consume(const std::string& token);
+	void Consume(const std::string& token);
 
 	std::vector<std::string> Tokenize(const std::string& input);
 
-	void evaluate(const std::vector<std::string>& tokens);
+	void Evaluate(const std::vector<std::string>& tokens);
 
-	void parse_stmt(const std::vector<std::string>& tokens);
+	void ParseStatement(const std::vector<std::string>& tokens);
 
-	void parse_configstmt(const std::vector<std::string>& tokens);
+	void ParseConfigStatement(const std::vector<std::string>& tokens);
 
-	int parse_printstmt(const std::vector<std::string>& tokens);
+	void ParsePrintStatement(const std::vector<std::string>& tokens);
 
-	void parse_assgstmt(const std::vector<std::string>& tokens);
+	void ParseAssignmentStatement(const std::vector<std::string>& tokens);
 
-	
+	int ParseMathExp(const std::vector<std::string>& tokens);
 
-	int Parse_MathExp(const std::vector<std::string>& tokens);
+	int ParseSumExp(const std::vector<std::string>& tokens);
 
-	int Parse_SumExp(const std::vector<std::string>& tokens);
+	int ParseProductExp(const std::vector<std::string>& tokens);
 
-	int Parse_ProductExp(const std::vector<std::string>& tokens);
-
-	int Parse_PrimaryExp(const std::vector<std::string>& tokens);
+	int ParsePrimaryExp(const std::vector<std::string>& tokens);
 
 	bool IsInt(const std::string& str);
 
