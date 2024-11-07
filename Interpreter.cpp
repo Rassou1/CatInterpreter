@@ -147,10 +147,10 @@ void Interpreter::parse_printstmt(const std::vector<std::string>& tokens)
 {
 	int result = 0;
 	std::string next_token = peek();
-	std::regex Int("-?[0-9]+");
+	std::regex Int("(-?[0-9]+)");
 	std::regex variable("[a-zA-Z][a-zA-Z0-9]*");
 
-	if (std::regex_match(next_token, Int))
+	if (std::regex_match(next_token, Int) || next_token == "(")
 	{
 		result = Parse_MathExp(tokens);
 		
