@@ -61,40 +61,23 @@ void Interpreter::consume(const std::string& token)
 		throw std::runtime_error("Consumed past last token\n");
 	if (next_token != token)
 		throw std::runtime_error("Could not consume token " + token + "\n");
+	//std::cout << token << position << std::endl;
 	position++;
 }
-
-//std::vector<std::string> Interpreter::Tokenize(const std::string& input) {
-//	std::istringstream stream(input);
-//	std::string line;
-//
-//	// Read each line (statement) from the input
-//	while (std::getline(stream, line)) {
-//		// Tokenize each line and store the resulting tokens
-//		tokens.push_back(line);
-//		
-//	}
-//	evaluate(tokens);
-//	return tokens;
-//}
 
 std::vector<std::string> Interpreter::Tokenize(const std::string& input)
 {
 	std::string token;
-
+	
 	for (int i = 0; i < input.size(); i++) {
 		char ch = input[i];
 	
 		if (!isspace(ch)) {
 			token += ch;
-			//std::cout << token << std::endl;
 		}
 		else {
 			tokens.push_back(token);
 			token.clear();
-			/*for (auto t : tokens) {
-				std::cout << t << std::endl;
-			}*/
 		}
 	}
 	if (!token.empty()) {
@@ -116,7 +99,7 @@ void Interpreter::parse_stmt(const std::vector<std::string>& tokens)
 
 	if (next_token == "config")
 	{
-		//consume(next_token);
+		consume(next_token);
 		parse_configstmt(tokens);
 	}
 	else if (next_token == "print")
@@ -128,7 +111,7 @@ void Interpreter::parse_stmt(const std::vector<std::string>& tokens)
 	{
 
 		symbolTable[next_token] = 0;
-		//consume(next_token);
+		consume(next_token);
 		parse_assgstmt(tokens);
 
 	}
@@ -183,7 +166,7 @@ void Interpreter::parse_printstmt(const std::vector<std::string>& tokens)
 		throw std::runtime_error("Error at token: " + next_token);
 	}
 
-	std::cout << result;
+	std::cout << result << std::endl;
 }
 
 void Interpreter::parse_assgstmt(const std::vector<std::string>& tokens)
@@ -224,7 +207,7 @@ int Interpreter::Parse_SumExp(const std::vector<std::string>& tokens) {
 		else if (next_token == "-") {
 			consume("-");
 			int rhs = Parse_ProductExp(tokens);
-			result = result + rhs;
+			result = result - rhs;
 		}
 		else break;
 		next_token = peek();
@@ -254,19 +237,61 @@ int Interpreter::Parse_ProductExp(const std::vector<std::string>& tokens) {
 }
 
 int Interpreter::Parse_PrimaryExp(const std::vector<std::string>& tokens) {
-	int value;
+	int result = 0;
 	std::string next_token = peek();
+	std::regex variable("[a-zA-Z][a-zA-Z0-9]*");
+	std::regex Int("-?[0-9]+");
 
-	if (IsInt(next_token))
-	{
-		value = std::stoi(next_token);
+	if (next_token == "(") {
+		consume(next_token);
+		result = Parse_MathExp(tokens);
+		next_token = peek();
+
+		if (next_token != ")") {
+			std::cout << "Fel: Saknad avslutande parentes." << std::endl;
+			throw std::runtime_error("Fel vid token: " + next_token);
+		}
 		consume(next_token);
 	}
-	// No valid PrimaryExp found, which is an error
-	else
-		throw std::runtime_error("expected int");
-	return value;
+	else if (std::regex_match(next_token, variable)) {
+		result = symbolTable[next_token];
+		consume(next_token);
+	}
+	else if (std::regex_match(next_token, Int)) {
+		result = std::stoi(next_token);
+		consume(next_token);
+	}
+	else {
+		std::cout << "Fel: Oväntad token: " << next_token << std::endl;
+		throw std::runtime_error("Fel vid token: " + next_token);
+	}
+	return result;
 }
+//int Interpreter::Parse_PrimaryExp(const std::vector<std::string>& tokens) {
+//	int result;
+//	std::string next_token = peek();
+//
+//	if (next_token == "(") {
+//		consume(next_token);
+//		result = Parse_MathExp(tokens);
+//		next_token = peek();
+//
+//		if (next_token != ")") {
+//			std::cout << "Fel: Saknad avslutande parentes." << std::endl;
+//			throw std::runtime_error("Fel vid token: " + next_token);
+//		}
+//		consume(next_token);
+//	}
+//	else if (IsInt(next_token))
+//	{
+//		result = std::stoi(next_token);
+//		consume(next_token);
+//	}
+////	 No valid PrimaryExp found, which is an error
+//	else
+//		throw std::runtime_error("expected int");
+//	return result;
+//}
 
 bool Interpreter::IsInt(const std::string& str) {
 	// Define the regex pattern for integers 
