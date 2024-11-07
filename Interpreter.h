@@ -11,7 +11,7 @@ class Interpreter
 
 public:
 
-	Interpreter(std::ostream& out_stream);
+	Interpreter(std::ostream& out_stream, std::string fileName);
 	
 	std::vector <std::string> tokens;
 
@@ -43,7 +43,7 @@ public:
 
 	void parse_configstmt(const std::vector<std::string>& tokens);
 
-	void parse_printstmt(const std::vector<std::string>& tokens);
+	int parse_printstmt(const std::vector<std::string>& tokens);
 
 	void parse_assgstmt(const std::vector<std::string>& tokens);
 

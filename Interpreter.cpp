@@ -6,8 +6,9 @@
 #include <fstream>
 
 
-Interpreter::Interpreter(std::ostream& outstream) {
-
+Interpreter::Interpreter(std::ostream& outstream, std::string fileName) {
+	outstream.out << ReadFile(fileName) << outstream.end;
+	
 }
 std::string Interpreter::peek()
 {
@@ -143,11 +144,11 @@ void Interpreter::parse_configstmt(const std::vector<std::string>& tokens)
 	}
 }
 
-void Interpreter::parse_printstmt(const std::vector<std::string>& tokens)
+int Interpreter::parse_printstmt(const std::vector<std::string>& tokens)
 {
 	int result = 0;
 	std::string next_token = peek();
-	std::regex Int("(-?[0-9]+)");
+	std::regex Int("-?[0-9]+");
 	std::regex variable("[a-zA-Z][a-zA-Z0-9]*");
 
 	if (std::regex_match(next_token, Int) || next_token == "(")
@@ -166,7 +167,8 @@ void Interpreter::parse_printstmt(const std::vector<std::string>& tokens)
 		throw std::runtime_error("Error at token: " + next_token);
 	}
 
-	std::cout << result << std::endl;
+	//make this go to the printstream
+	return result;
 }
 
 void Interpreter::parse_assgstmt(const std::vector<std::string>& tokens)

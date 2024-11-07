@@ -4,8 +4,7 @@
 
 int main()
 	{
-		Interpreter interpreter(std::cout);
-		interpreter.ReadFile("test.txt");
+		Interpreter interpreter(std::cout, "test.txt");
 		return 0;
 	}
 
