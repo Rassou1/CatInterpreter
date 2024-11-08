@@ -4,10 +4,11 @@
 #include <sstream>
 #include <iostream>
 #include <fstream>
+#include <bitset>
 
 
-Interpreter::Interpreter(std::ostream& outstream, std::string fileName) {
-	outstream.out << ReadFile(fileName) << outstream.end;
+Interpreter::Interpreter(std::ostream& outstream, std::string fileName) : outstream(outstream){
+	ReadFile(fileName);
 	
 }
 std::string Interpreter::peek()
@@ -15,15 +16,17 @@ std::string Interpreter::peek()
 	return peek(0);
 }
 
-std::string Interpreter::peekP()
-{
-	return peekP(0);
-}
-
 std::string Interpreter::peekP(int steps)
 {
 	return tokens[position - steps];
 }
+
+enum IntBase {
+	dec,
+	hex,
+	bin
+};
+IntBase IB = dec;
 
 bool Interpreter::ReadFile(const std::string& fileName)
 {
@@ -130,47 +133,64 @@ void Interpreter::parse_stmt(const std::vector<std::string>& tokens)
 
 void Interpreter::parse_configstmt(const std::vector<std::string>& tokens)
 {
-	std::string next_token = peek();
-	consume(next_token);
+	std::string nextToken = peek();
+	consume(nextToken);
 
-	if (next_token == "dec")
+	if (nextToken == "dec")
 	{
+		IB = dec;
+		outstream << "Numbers are now in Base10" << std::endl;
 	}
-	else if (next_token == "hex")
+	else if (nextToken == "hex")
 	{
+		IB = hex;
+		outstream << "Numbers are now in Base6" << std::endl;
 	}
-	else if (next_token == "bin")
+	else if (nextToken == "bin")
 	{
+		IB = bin;
+		outstream << "Numbers are now in Base2" << std::endl;
 	}
 }
+std::string Interpreter::peekP()
+{
+	return peekP(1);
+}
 
-int Interpreter::parse_printstmt(const std::vector<std::string>& tokens)
+void Interpreter::parse_printstmt(const std::vector<std::string>& tokens)
 {
 	int result = 0;
-	std::string next_token = peek();
+	std::string nextToken = peek();
 	std::regex Int("-?[0-9]+");
 	std::regex variable("[a-zA-Z][a-zA-Z0-9]*");
 
-	if (std::regex_match(next_token, Int) || next_token == "(")
+	if (std::regex_match(nextToken, Int) || nextToken == "(")
 	{
 		result = Parse_MathExp(tokens);
-		
+
 	}
-	else if (std::regex_match(next_token, variable)) 
+	else if (std::regex_match(nextToken, variable))
 	{
-		result = symbolTable[next_token];
-		consume(next_token);
+		result = symbolTable[nextToken];
+		consume(nextToken);
 	}
 	else
 	{
-		std::cout << "error bitch: " << std::endl;
-		throw std::runtime_error("Error at token: " + next_token);
+		outstream << "Error encountered in method ParsePrintStatement" << std::endl;
+		throw std::runtime_error("Error at token: " + nextToken);
 	}
 
-	//make this go to the printstream
-	return result;
+	switch (IB) {
+	case IntBase::dec:
+		outstream << std::showbase << std::dec << result << std::endl;
+		break;
+	case IntBase::hex:
+		outstream << std::showbase << std::hex << result << std::endl;
+		break;
+	case IntBase::bin:
+		outstream << std::bitset<32>(result) << std::endl;
+	}
 }
-
 void Interpreter::parse_assgstmt(const std::vector<std::string>& tokens)
 {
 	int result = 0;

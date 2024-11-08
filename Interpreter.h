@@ -15,6 +15,8 @@ public:
 	
 	std::vector <std::string> tokens;
 
+	std::ostream& outstream;
+
 	std::vector<std::string> statements;
 
 	std::map<std::string, int> symbolTable;
@@ -43,11 +45,10 @@ public:
 
 	void parse_configstmt(const std::vector<std::string>& tokens);
 
-	int parse_printstmt(const std::vector<std::string>& tokens);
+	void parse_printstmt(const std::vector<std::string>& tokens);
 
 	void parse_assgstmt(const std::vector<std::string>& tokens);
 
-	
 
 	int Parse_MathExp(const std::vector<std::string>& tokens);
 
