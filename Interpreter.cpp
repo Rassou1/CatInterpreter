@@ -4,40 +4,26 @@
 #include <sstream>
 #include <iostream>
 #include <fstream>
-#include <bitset>
 
 
-Interpreter::Interpreter(std::ostream& outstream, std::string fileName) : outstream(outstream) {
-	ReadFile(fileName);
+Interpreter::Interpreter(std::ostream& outstream, std::string fileName) {
+	outstream.out << ReadFile(fileName) << outstream.end;
+	
 }
-std::string Interpreter::Peek()
+std::string Interpreter::peek()
 {
-	return Peek(0);
+	return peek(0);
 }
 
-std::string Interpreter::Peek(int steps)
+std::string Interpreter::peekP()
 {
-	if (position + steps >= tokens.size()) return ETX;
-	return tokens[position + steps];
+	return peekP(0);
 }
 
-std::string Interpreter::PeekP()
-{
-	return PeekP(1);
-}
-
-std::string Interpreter::PeekP(int steps)
+std::string Interpreter::peekP(int steps)
 {
 	return tokens[position - steps];
 }
-
-enum IntBase {
-	dec,
-	hex,
-	bin
-};
-
-IntBase IB = dec;
 
 bool Interpreter::ReadFile(const std::string& fileName)
 {
@@ -58,18 +44,25 @@ bool Interpreter::ReadFile(const std::string& fileName)
 		return true;
 	}
 	else {
-		outstream<< "Unable to open file";
+		std::cout << "Unable to open file";
 		return false;
 	}
 }
 
-void Interpreter::Consume(const std::string& token)
+std::string Interpreter::peek(int steps)
 {
-	std::string nextToken = Peek();
-	if (nextToken == ETX)
+	if (position + steps >= tokens.size()) return ETX;
+	return tokens[position + steps];
+}
+
+void Interpreter::consume(const std::string& token)
+{
+	std::string next_token = peek();
+	if (next_token == ETX)
 		throw std::runtime_error("Consumed past last token\n");
-	if (nextToken != token)
-		throw std::runtime_error("Could not Consume token " + token + "\n");
+	if (next_token != token)
+		throw std::runtime_error("Could not consume token " + token + "\n");
+	//std::cout << token << position << std::endl;
 	position++;
 }
 
@@ -91,207 +84,216 @@ std::vector<std::string> Interpreter::Tokenize(const std::string& input)
 	if (!token.empty()) {
 		tokens.push_back(token);
 	}
-	Evaluate(tokens);
+	evaluate(tokens);
 	return tokens;
 }
 
-void Interpreter::Evaluate(const std::vector<std::string>& tokens)
+void Interpreter::evaluate(const std::vector<std::string>& tokens)
 {
-	ParseStatement(tokens);
+	parse_stmt(tokens);
 }
 
-void Interpreter::ParseStatement(const std::vector<std::string>& tokens)
+void Interpreter::parse_stmt(const std::vector<std::string>& tokens)
 {
 	std::regex variable("[a-zA-Z][a-zA-Z0-9]*");
-	std::string nextToken = Peek();
+	std::string next_token = peek();
 
-	if (nextToken == "Config")
+	if (next_token == "config")
 	{
-		Consume(nextToken);
-		ParseConfigStatement(tokens);
+		consume(next_token);
+		parse_configstmt(tokens);
 	}
-	else if (nextToken == "Print")
+	else if (next_token == "print")
 	{
-		Consume(nextToken);
-		ParsePrintStatement(tokens);
+		consume(next_token);
+		parse_printstmt(tokens);
 	}
-	else if (std::regex_match(nextToken, variable))
+	else if (std::regex_match(next_token, variable))
 	{
 
-		symbolTable[nextToken] = 0;
-		Consume(nextToken);
-		ParseAssignmentStatement(tokens);
+		symbolTable[next_token] = 0;
+		consume(next_token);
+		parse_assgstmt(tokens);
 
 	}
-	else if (nextToken == ETX)
+	else if (next_token == ETX)
 	{
 		return;
 	}
 	else
 	{
-		outstream<< "Error encountered in method ParseStatement" << std::endl;
+		std::cout << "error bitch: " << std::endl;
 		throw std::runtime_error("error");
+
 	}
 }
 
-void Interpreter::ParseConfigStatement(const std::vector<std::string>& tokens)
+void Interpreter::parse_configstmt(const std::vector<std::string>& tokens)
 {
-	std::string nextToken = Peek();
-	Consume(nextToken);
+	std::string next_token = peek();
+	consume(next_token);
 
-	if (nextToken == "dec")
+	if (next_token == "dec")
 	{
-		IB = dec;
-		outstream << "Numbers are now in Base10" << std::endl;
 	}
-	else if (nextToken == "hex")
+	else if (next_token == "hex")
 	{
-		IB = hex;
-		outstream << "Numbers are now in Base6" << std::endl;
 	}
-	else if (nextToken == "bin")
+	else if (next_token == "bin")
 	{
-		IB = bin;
-		outstream << "Numbers are now in Base2" << std::endl;
 	}
 }
 
-void Interpreter::ParsePrintStatement(const std::vector<std::string>& tokens)
+int Interpreter::parse_printstmt(const std::vector<std::string>& tokens)
 {
 	int result = 0;
-	std::string nextToken = Peek();
+	std::string next_token = peek();
 	std::regex Int("-?[0-9]+");
 	std::regex variable("[a-zA-Z][a-zA-Z0-9]*");
 
-	if (std::regex_match(nextToken, Int) || nextToken == "(")
+	if (std::regex_match(next_token, Int) || next_token == "(")
 	{
-		result = ParseMathExp(tokens);
+		result = Parse_MathExp(tokens);
 		
 	}
-	else if (std::regex_match(nextToken, variable)) 
+	else if (std::regex_match(next_token, variable)) 
 	{
-		result = symbolTable[nextToken];
-		Consume(nextToken);
+		result = symbolTable[next_token];
+		consume(next_token);
 	}
 	else
 	{
-		outstream<< "Error encountered in method ParsePrintStatement" << std::endl;
-		throw std::runtime_error("Error at token: " + nextToken);
+		std::cout << "error bitch: " << std::endl;
+		throw std::runtime_error("Error at token: " + next_token);
 	}
 
-	switch(IB)  {
-	case IntBase::dec:
-		outstream << std::showbase << std::dec << result << std::endl;
-		break;
-	case IntBase::hex:
-		outstream << std::showbase << std::hex << result << std::endl;
-		break;
-	case IntBase::bin:
-		outstream << std::bitset<32>(result) << std::endl;
-	}
-	
-
-	
+	//make this go to the printstream
+	return result;
 }
 
-void Interpreter::ParseAssignmentStatement(const std::vector<std::string>& tokens)
+void Interpreter::parse_assgstmt(const std::vector<std::string>& tokens)
 {
 	int result = 0;
-	std::string nextToken = Peek();
-	std::string variableToken = PeekP();
+	std::string next_token = peek();
+	std::string variableToken = peekP();
 
-	if (nextToken == ETX)
+	if (next_token == ETX)
 	{
 		return;
 	}
-	if (nextToken != "=")
+	if (next_token != "=")
 	{
-		outstream<< "Error encountered in method ParseAssignmentStatement" << std::endl;
+		std::cout << "error bitch: " << std::endl;
 		throw std::runtime_error("error");
 	}
-	Consume(nextToken);
-	result = ParseMathExp(tokens);
+	consume(next_token);
+	result = Parse_MathExp(tokens);
 	symbolTable[variableToken] = result;
 }
 
-int Interpreter::ParseMathExp(const std::vector<std::string>& tokens) {
-	return ParseSumExp(tokens);
+int Interpreter::Parse_MathExp(const std::vector<std::string>& tokens) {
+	return Parse_SumExp(tokens);
 }
 
-int Interpreter::ParseSumExp(const std::vector<std::string>& tokens) {
+int Interpreter::Parse_SumExp(const std::vector<std::string>& tokens) {
 
-	int result = ParseProductExp(tokens);
+	int result = Parse_ProductExp(tokens);
 
-	std::string nextToken = Peek();
+	std::string next_token = peek();
 	while (1) {
-		if (nextToken == "+") {
-			Consume("+");
-			int rhs = ParseProductExp(tokens);
+		if (next_token == "+") {
+			consume("+");
+			int rhs = Parse_ProductExp(tokens);
 			result = result + rhs;
 		}
-		else if (nextToken == "-") {
-			Consume("-");
-			int rhs = ParseProductExp(tokens);
+		else if (next_token == "-") {
+			consume("-");
+			int rhs = Parse_ProductExp(tokens);
 			result = result - rhs;
 		}
 		else break;
-		nextToken = Peek();
+		next_token = peek();
 	}
 	return result;
 }
 
-int Interpreter::ParseProductExp(const std::vector<std::string>& tokens) {
-	int result = ParsePrimaryExp(tokens);
+int Interpreter::Parse_ProductExp(const std::vector<std::string>& tokens) {
+	int result = Parse_PrimaryExp(tokens);
 
-	std::string nextToken = Peek();
+	std::string next_token = peek();
 	while (1) {
-		if (nextToken == "*") {
-			Consume("*");
-			int rhs = ParsePrimaryExp(tokens);
+		if (next_token == "*") {
+			consume("*");
+			int rhs = Parse_PrimaryExp(tokens);
 			result = result * rhs;
 		}
-		else if (nextToken == "/") {
-			Consume("/");
-			int rhs = ParsePrimaryExp(tokens);
+		else if (next_token == "/") {
+			consume("/");
+			int rhs = Parse_PrimaryExp(tokens);
 			result = result / rhs;
 		}
 		else break;
-		nextToken = Peek();
+		next_token = peek();
 	}
 	return result;
 }
 
-int Interpreter::ParsePrimaryExp(const std::vector<std::string>& tokens) {
+int Interpreter::Parse_PrimaryExp(const std::vector<std::string>& tokens) {
 	int result = 0;
-	std::string nextToken = Peek();
+	std::string next_token = peek();
 	std::regex variable("[a-zA-Z][a-zA-Z0-9]*");
 	std::regex Int("-?[0-9]+");
 
-	if (nextToken == "(") {
-		Consume(nextToken);
-		result = ParseMathExp(tokens);
-		nextToken = Peek();
+	if (next_token == "(") {
+		consume(next_token);
+		result = Parse_MathExp(tokens);
+		next_token = peek();
 
-		if (nextToken != ")") {
-			outstream<< "Fel: Saknad avslutande parentes." << std::endl;
-			throw std::runtime_error("Fel vid token: " + nextToken);
+		if (next_token != ")") {
+			std::cout << "Fel: Saknad avslutande parentes." << std::endl;
+			throw std::runtime_error("Fel vid token: " + next_token);
 		}
-		Consume(nextToken);
+		consume(next_token);
 	}
-	else if (std::regex_match(nextToken, variable)) {
-		result = symbolTable[nextToken];
-		Consume(nextToken);
+	else if (std::regex_match(next_token, variable)) {
+		result = symbolTable[next_token];
+		consume(next_token);
 	}
-	else if (std::regex_match(nextToken, Int)) {
-		result = std::stoi(nextToken);
-		Consume(nextToken);
+	else if (std::regex_match(next_token, Int)) {
+		result = std::stoi(next_token);
+		consume(next_token);
 	}
 	else {
-		outstream<< "Fel: Oväntad token: " << nextToken << std::endl;
-		throw std::runtime_error("Fel vid token: " + nextToken);
+		std::cout << "Fel: Oväntad token: " << next_token << std::endl;
+		throw std::runtime_error("Fel vid token: " + next_token);
 	}
 	return result;
 }
+//int Interpreter::Parse_PrimaryExp(const std::vector<std::string>& tokens) {
+//	int result;
+//	std::string next_token = peek();
+//
+//	if (next_token == "(") {
+//		consume(next_token);
+//		result = Parse_MathExp(tokens);
+//		next_token = peek();
+//
+//		if (next_token != ")") {
+//			std::cout << "Fel: Saknad avslutande parentes." << std::endl;
+//			throw std::runtime_error("Fel vid token: " + next_token);
+//		}
+//		consume(next_token);
+//	}
+//	else if (IsInt(next_token))
+//	{
+//		result = std::stoi(next_token);
+//		consume(next_token);
+//	}
+////	 No valid PrimaryExp found, which is an error
+//	else
+//		throw std::runtime_error("expected int");
+//	return result;
+//}
 
 bool Interpreter::IsInt(const std::string& str) {
 	// Define the regex pattern for integers 
@@ -308,9 +310,6 @@ bool Interpreter::IsValue(const std::string& str) {
 	// Use std::regex_match to check if the string matches the pattern
 	return std::regex_match(str, pattern);
 }
-
-
-
 
 
 
